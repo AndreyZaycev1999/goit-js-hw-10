@@ -1,58 +1,71 @@
 import './css/styles.css';
 import fetchCountries from './fetchCountries';
+import debounce from 'lodash.debounce';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-var debonce = require('lodash.debonce');
 const DEBOUNCE_DELAY = 300;
+
+var debounced = debounce(inputFetch, DEBOUNCE_DELAY);
 
 const inputRef = document.querySelector('input#search-box');
 const listRef = document.querySelector('.country-list');
 const infoRef = document.querySelector('.country-info');
 
-let searchQuery = '';
+// let searchQuery = '';
 
-inputRef.addEventListener('input', debonce(inputFetch, DEBOUNCE_DELAY));
+inputRef.addEventListener('input', debounced);
 
 function inputFetch(searchQuery) {
     console.log(inputRef.value);
+    listRef.innerHTML = "";
+    infoRef.innerHTML = "";
     searchQuery = inputRef.value.trim();
-    fetchCountries(searchQuery).then(countries => renderMarkup(countries)).catch(console.error('Error inputFech'));
+    fetchCountries(searchQuery).then(countries => renderMarkup(countries));
 };
 
 function renderMarkup(countries) {
     console.log('країни', countries);
-    if (countries.length === 0) {
-        listRef.innerHTML = '';
-        infoRef.innerHTML = '';
-    } else if (countries.length > 2 && countries.length < 10) {
+    // console.log('Кількість: ', countries.length)
+    if (countries === undefined) {
+        
+    } else if (countries.length >= 2 && countries.length <= 10) {
         appendListMarkup(countries);
-    } else {
+    } else if (countries.length > 10) {
+        Notify.info("Too many matches found. Please enter a more specific name.");
+    }else {
         appendInfoMarkup(countries);
     };
-}
+};
 
 function appendInfoMarkup(countries) {
-    const infoMarkup = countries.map(({name: { official }, flags: { svg }, capital, population, languages }) => {
-        const language = Object.values(languages).join(", ");
-        `
-    <hi><img src="${svg}"/><span>${official}</span></h1>
-        <p>Capital: ${capital}</p>
-        <p>Population: ${population}</p>
-        <p>Languages: ${language}</p>`; }).join('');
+    console.log('1 країна: ', countries);
 
-        for (const country of countries) {
-            listRef.innerHTML = infoMarkup;
-        };
+    countries.map((country) => {
+        const {name: { official }, flags, capital, population, languages } = country;
+        const language = Object.values(languages).join(", ");
+        
+        const infoMarkup = `
+        <hi><img src="${flags.svg}" width="35"/><span>${official}</span></h1>
+            <p>Capital: ${capital}</p>
+            <p>Population: ${population}</p>
+            <p>Languages: ${language}</p>`;
+
+        infoRef.innerHTML = infoMarkup;
+    }).join('');
 };
 
 function appendListMarkup(countries) {
-    const listMarkup = countries.map(({ name: { official }, flag: { svg }}) => { `
-    <li class="country-list__item">
-        <img src="${svg}"/><span>${official}</span>
-    </li>`; }).join('');
+    const markup = countries
+    .map((country) => `
+        <li class="country-list__item">
+            <img src="${country.flags.svg}" width="35"/><span>${country.name.official}</span>
+        </li>`)
+    .join('');
 
-    listRef.innerHTML = listMarkup;
+    listRef.innerHTML = markup;
 };
+
+
 
 
 // inputSearchBox.addEventListener('input', () => {
